@@ -1,0 +1,5 @@
+host: localhost
+port: 6600
+timeout: 0 # Timeout in ms for mpd, 0 means no timeout
+reconnect: 5 # Seconds before reconnecting to mpd
+kill_wait: 3 # Seconds to wait before killing daemon

@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+require 'mpd-dj/app'
+require 'yaml'
+
+def usage
+  puts "Usage:"
+  puts "\tmpd-dj [path/to/config.yml]"
+  puts ""
+  puts "Music Player Daemon DJ - a daemon for dynamically controlling mpd."
+  puts ""
+  exit 0
+end
+
+def file_not_found(file)
+  puts "Failed to open #{file}: No such file or directory"
+  exit 0
+end
+
+usage if ARGV[0].nil? || ARGV[0].empty?
+
+conf_file = ARGV[0]
+file_not_found conf_file if !File.exist?(conf_file)
+exit MPD::DJ::Application.new(YAML::load(File.open(conf_file))).run!
