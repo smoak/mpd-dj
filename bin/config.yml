@@ -3,3 +3,6 @@ port: 6600
 timeout: 0 # Timeout in ms for mpd, 0 means no timeout
 reconnect: 5 # Seconds before reconnecting to mpd
 kill_wait: 3 # Seconds to wait before killing daemon
+recent: 1 # how many songs before the current song are kept on the playlist, with 0 being "Remove the song as soon as it's done playing"
+upcoming: 10 # how many songs should be on the list for after the current track.
+

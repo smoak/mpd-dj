@@ -21,7 +21,7 @@ module MPD
         # 0 probably doesn't work well here, but 1 would be only the next song.
         @options[:upcoming] = 1 unless @options[:upcoming] > 0
         @logger = Logger.new(STDOUT)
-#        @logger.level = Logger::DEBUG
+        @logger.level = Logger::DEBUG
         @last_song = SimpleSongStruct.new
         @current_song = SimpleSongStruct.new
       end
@@ -32,19 +32,23 @@ module MPD
 
       def new_status_callback(new_status)
         # This is where we do all our work
-        #
          
         @logger.debug "new status from mpd: #{new_status}"
 
-        if !new_status.playlist.current.nil? && @current_song.id != new_status.playlist.current.id
-          @last_song = @current_song
-          @current_song = song_from_status(new_status)
+        # if the playlist was cleared, well get a new status
+        # but we dont want to do anything in that case
+        return if new_status.playlist.current.nil?
+
+        @last_song = @current_song
+        @current_song = song_from_status(new_status)
+
+        if @last_song.id != @current_song.id 
           @logger.debug("got new song: #{@current_song}")
           playlist_len = @client.playlist.length 
           before_pos = @last_song.playlist_pos
           after = playlist_len - @current_song.playlist_pos
-          if before_pos > @options[:recent]
-            count = before_pos - @options[:recent]
+          if @current_song.playlist_pos > @options[:recent]
+            count = @current_song.playlist_pos - @options[:recent]
             remove_songs(count)
           end
           if after < @options[:upcoming]
@@ -134,7 +138,6 @@ module MPD
         # When a song is finished playing it is removed from the playlist, and the playlist is meant to always have a certain number of items in it.
         #
         # When there aren't enough songs in the playlist, one is randomly chosen from the library and put on the end of the list.
-        #
         #
         initialize_client
         initialize_playlist
