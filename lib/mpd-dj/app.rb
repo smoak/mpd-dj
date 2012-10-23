@@ -30,9 +30,13 @@ module MPD
         @client = MPD::Controller.new(@options[:host], @options[:port])
       end
 
+      ##
+      # Called when a new status is received from mpd
+      #
+      # A status can either be player or playlist
+      # This is where we do the bulk of our work
+      # to figure out how many songs to remove or add
       def new_status_callback(new_status)
-        # This is where we do all our work
-         
         @logger.debug "new status from mpd: #{new_status}"
 
         # if the playlist was cleared, well get a new status
@@ -75,6 +79,8 @@ module MPD
 
       end
 
+      ##
+      # Adds songs to the end of the playlist
       def add_songs(songs)
         @logger.debug("Adding #{songs.length} random songs")
         commandProc = Proc.new { |_|
@@ -105,25 +111,29 @@ module MPD
       # 5. if paused, then unpause
       def initialize_playlist
         playlist_size = @client.playlist.length
+        @current_song = song_from_status(@client.status)
 
-        if playlist_size < @options[:upcoming]
-          songs_to_add = @options[:upcoming] - playlist_size
-          @logger.debug("Adding #{songs_to_add} random songs")
-          add_songs songs.sample(songs_to_add)
+        # check if we need to remove any songs based on the
+        # amount of recent songs we want to keep
+        # This is the case where we get started when the current song
+        # is already past the very first song (e.g. its halfway through)
+        if @current_song.playlist_pos > @options[:recent]
+          count = @current_song.playlist_pos - @options[:recent]
+          remove_songs(count)
         end
 
-        if playlist_size > @options[:upcoming]
-          songs_to_remove = @options[:recent]
-          @logger.debug("Removing #{songs_to_remove} songs")
-          remove_songs songs_to_remove
+        # Ensure our playlist has enough songs
+        if playlist_size < @options[:upcoming]
+          songs_to_add = @options[:upcoming] - playlist_size
+          add_songs songs.sample(songs_to_add)
         end
 
         @client.toggle.no_random! if @client.status.random?
         @client.player.play(:position => -1) if @client.status == :stop
         @client.player.unpause if @client.status == :pause
 
-        @current_song = song_from_status(@client.status)
         @logger.debug("Current Song: #{@current_song}")
+
       end
 
       def song_from_status(status)
@@ -136,9 +146,7 @@ module MPD
 
       def run!
         # When a song is finished playing it is removed from the playlist, and the playlist is meant to always have a certain number of items in it.
-        #
         # When there aren't enough songs in the playlist, one is randomly chosen from the library and put on the end of the list.
-        #
         initialize_client
         initialize_playlist
         @client.loop do 
