@@ -24,20 +24,29 @@ module MPD
         @logger.level = Logger::DEBUG
         @last_song = SimpleSongStruct.new
         @current_song = SimpleSongStruct.new
-      end
-
-      def initialize_client
+        @update_song_cache = true
         @client = MPD::Controller.new(@options[:host], @options[:port])
       end
 
       ##
       # Called when a new status is received from mpd
       #
-      # A status can either be player or playlist
+      # This can be database, update, stored_playlist,
+      # playlist, player, mixer, output, options,
+      # sticker, subscription, message
+      #
+      # See http://www.musicpd.org/doc/protocol/ch03.html#idp125872
+      # for more information on status messages.
+      #
       # This is where we do the bulk of our work
       # to figure out how many songs to remove or add
-      def new_status_callback(new_status)
-        @logger.debug "new status from mpd: #{new_status}"
+      def new_status_callback(subsystem)
+        if subsystem == :database
+          @logger.debug("marking song cache for updating")
+          @update_song_cache = true
+        end
+        new_status = @client.status
+        @logger.debug "new status from mpd: #{subsystem}"
 
         # if the playlist was cleared, well get a new status
         # but we dont want to do anything in that case
@@ -67,13 +76,13 @@ module MPD
       # Returns all songs in the database
       def songs
         # memoize for now since this can be expensive.
-        # TODO: figure out when to update this "cache"
-        if @songs.nil?
+        if @songs.nil? || @update_song_cache
           @songs = @client.do_and_raise_if_needed(:listall, "/").select { |name, _|
             name == :file
           }.map { |name, value|
             MPD::Controller::Database::Song.from_data({ name => value }, @client)
           }
+          @update_song_cache = false
         end
         @songs
 
@@ -111,16 +120,6 @@ module MPD
       # 5. if paused, then unpause
       def initialize_playlist
         playlist_size = @client.playlist.length
-        @current_song = song_from_status(@client.status)
-
-        # check if we need to remove any songs based on the
-        # amount of recent songs we want to keep
-        # This is the case where we get started when the current song
-        # is already past the very first song (e.g. its halfway through)
-        if @current_song.playlist_pos > @options[:recent]
-          count = @current_song.playlist_pos - @options[:recent]
-          remove_songs(count)
-        end
 
         # Ensure our playlist has enough songs
         if playlist_size < @options[:upcoming]
@@ -131,6 +130,17 @@ module MPD
         @client.toggle.no_random! if @client.status.random?
         @client.player.play(:position => -1) if @client.status == :stop
         @client.player.unpause if @client.status == :pause
+
+        @current_song = song_from_status(@client.status)
+
+        # check if we need to remove any songs based on the
+        # amount of recent songs we want to keep
+        # This is the case where we get started when the current song
+        # is already past the very first song (e.g. its halfway through)
+        if @current_song.playlist_pos > @options[:recent]
+          count = @current_song.playlist_pos - @options[:recent]
+          remove_songs(count)
+        end
 
         @logger.debug("Current Song: #{@current_song}")
 
@@ -147,10 +157,9 @@ module MPD
       def run!
         # When a song is finished playing it is removed from the playlist, and the playlist is meant to always have a certain number of items in it.
         # When there aren't enough songs in the playlist, one is randomly chosen from the library and put on the end of the list.
-        initialize_client
         initialize_playlist
-        @client.loop do 
-          new_status_callback @client.status
+        @client.loop do |r|
+          new_status_callback r
         end
         return 0
       end
