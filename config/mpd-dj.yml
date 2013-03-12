@@ -1,0 +1,8 @@
+mpd_host: localhost
+mpd_port: 6600
+redis_host: localhost
+redis_port: 6379
+timeout: 0 # Timeout in ms for mpd, 0 means no timeout
+reconnect: 5 # Seconds before reconnecting to mpd
+recent: 0 # how many songs before the current song are kept on the playlist, with 0 being "Remove the song as soon as it's done playing"
+upcoming: 20 # how many songs should be on the list for after the current track.
