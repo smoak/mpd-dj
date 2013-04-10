@@ -1,0 +1,23 @@
+<div id="search">
+  <input type='text' id='query' />
+</div>
+<div id="songlist-container">
+  {{#songs}}
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Artist</th>
+          <th>Album</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{title}}</td>
+          <td>{{artist}}</td>
+          <td>{{album}}</td>
+        </tr>
+      </tbody>
+    </table>
+  {{/songs}}
+</div>

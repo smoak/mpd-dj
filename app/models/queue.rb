@@ -1,4 +1,5 @@
 module MPD::DJ
+
   # === Description
   # Represents the play queue. This will be a subset
   # of the playlist. This is stored in mpd
@@ -9,8 +10,13 @@ module MPD::DJ
     end
 
     def self.add_song(song)
-      puts logger
 
+    end
+
+    def self.songs
+      $mpd.playlist.songs.map do |s|
+        Song.from_mpd(s)
+      end
     end
 
   end

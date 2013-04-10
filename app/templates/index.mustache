@@ -1,1 +1,23 @@
-Hey
+<div class='well now-playing'>
+  {{#now_playing}}
+    {{>song}}
+  {{/now_playing}}
+</div>
+<h3>Queue</h3>
+<ul class='media-list'>
+  {{#songs}}
+    <li class='media'>
+      <div class='well'>
+        {{>song}}
+        <div class='btn-group'>
+          <a href='/thumbsup' class='btn btn-primary btn-mini'>
+            <i class='icon-white icon-thumbs-up'></i>
+          </a>
+          <a href='/thumbsdown' class='btn btn-danger btn-mini'>
+            <i class='icon-white icon-thumbs-down'></i>
+          </a>
+        </div>
+      </div>
+    </li>
+  {{/songs}}
+</ul>

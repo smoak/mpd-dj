@@ -11,4 +11,5 @@ gem 'mustache', '~>0.99.4'
 
 group :development do
   gem 'shotgun'
+  gem 'debugger'
 end
